@@ -1,5 +1,5 @@
 module OpenTelemetry.AWSXRay.Sampler
-  ( awsXrayTraceIdRatioBased
+  ( awsXRayTraceIdRatioBased
   )
   where
 
@@ -18,10 +18,10 @@ import OpenTelemetry.Trace.TraceState as TraceState
 import Data.Word (Word64)
 
 -- | identical as traceIdRatioBased except it drops first 4 bytes as they indicate timestamp in XRay
-awsXrayTraceIdRatioBased :: Double -> Sampler
-awsXrayTraceIdRatioBased fraction | fraction >= 1 = alwaysOn
-awsXrayTraceIdRatioBased fraction | fraction <= 0 = alwaysOff
-awsXrayTraceIdRatioBased fraction = sampler
+awsXRayTraceIdRatioBased :: Double -> Sampler
+awsXRayTraceIdRatioBased fraction | fraction >= 1 = alwaysOn
+awsXRayTraceIdRatioBased fraction | fraction <= 0 = alwaysOff
+awsXRayTraceIdRatioBased fraction = sampler
   where
     sampleRate =
       if fraction > 0
