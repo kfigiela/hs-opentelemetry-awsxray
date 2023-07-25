@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,6 +31,7 @@ library
       OpenTelemetry.AWSXRay.Baggage
       OpenTelemetry.AWSXRay.IdGenerator
       OpenTelemetry.AWSXRay.Propagator
+      OpenTelemetry.AWSXRay.Sampler
       OpenTelemetry.AWSXRay.TraceInfo
       OpenTelemetry.Trace.Setup
       OpenTelemetry.Trace.Setup.Lens
@@ -63,16 +64,17 @@ library
       StandaloneDeriving
       TypeApplications
       TypeFamilies
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-unsafe -Wno-safe
+  ghc-options: -Weverything -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-unsafe -Wno-safe
   build-depends:
       base <5
+    , binary
     , bytestring
     , errors
     , hs-opentelemetry-api
     , hs-opentelemetry-sdk
     , http-types
-    , memory
     , microlens
+    , mwc-random
     , random >=1.2.1
     , text
     , time
@@ -89,6 +91,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.AWSXRay.SamplerSpec
       OpenTelemetry.AWSXRay.TraceInfoSpec
       Paths_hs_opentelemetry_awsxray
   hs-source-dirs:
@@ -118,7 +121,7 @@ test-suite spec
       StandaloneDeriving
       TypeApplications
       TypeFamilies
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-unsafe -Wno-safe -threaded -rtsopts "-with-rtsopts=-N"
+  ghc-options: -Weverything -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-unsafe -Wno-safe -threaded -rtsopts "-with-rtsopts=-N"
   build-depends:
       base <5
     , hs-opentelemetry-api

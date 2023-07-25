@@ -15,6 +15,8 @@ extra-source-files:
 
 ghc-options:
   - -Weverything
+  - -Wno-missed-specialisations
+  - -Wno-all-missed-specialisations
   - -Wno-missing-exported-signatures # re-enables missing-signatures
   - -Wno-missing-import-lists
   - -Wno-missing-local-signatures
@@ -63,14 +65,15 @@ default-extensions:
 library:
   source-dirs: library
   dependencies:
+    - binary
     - bytestring
     - errors
     - hs-opentelemetry-api
     - hs-opentelemetry-sdk
     - http-types
-    - memory
     - microlens
-    - random >= 1.2.1 # globalStdGen
+    - mwc-random
+    - random >= 1.2.1
     - text
     - time
     - unliftio

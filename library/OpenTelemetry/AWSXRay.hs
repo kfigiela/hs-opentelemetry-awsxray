@@ -4,3 +4,4 @@ module OpenTelemetry.AWSXRay
 
 import OpenTelemetry.AWSXRay.IdGenerator as X
 import OpenTelemetry.AWSXRay.Propagator as X
+import OpenTelemetry.AWSXRay.Sampler as X
