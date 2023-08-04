@@ -36,6 +36,7 @@ import OpenTelemetry.Trace.Id
   , traceIdBaseEncodedByteString
   )
 import qualified OpenTelemetry.Trace.TraceState as TS
+import Data.Maybe (fromMaybe)
 
 -- | The data to read/write from the @X-Amzn-TraceId@ header
 data TraceInfo = TraceInfo
@@ -62,15 +63,16 @@ fromXRayHeader bs = do
       prefix errorPrefix $ baseEncodedToTraceId Base16 epochUnique
     _ -> Left "Splitting on - did not produce exactly 3 parts"
 
-  parent <- note "Parent not present" $ lookup "Parent" kv
+  let defaultParent = BS.takeEnd 16 root
+  let parent = fromMaybe defaultParent $ lookup "Parent" kv
   spanId <- prefix "Parent is not a valid SpanId"
     $ baseEncodedToSpanId Base16 parent
 
   let
-    sampled = (== Just "1") $ lookup "Sampled" kv
-
-    traceFlags =
-      (if sampled then setSampled else unsetSampled) defaultTraceFlags
+    traceFlags = case (== "1") <$> lookup "Sampled" kv of
+      Nothing -> defaultTraceFlags
+      Just True -> setSampled defaultTraceFlags
+      Just False -> unsetSampled defaultTraceFlags
 
     baggage = Baggage.decode kv
 

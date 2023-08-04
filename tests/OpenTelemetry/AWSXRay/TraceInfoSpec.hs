@@ -4,7 +4,7 @@ module OpenTelemetry.AWSXRay.TraceInfoSpec
 
 import Prelude
 
-import Data.Either (isLeft)
+import Data.Either (isLeft, isRight)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -38,8 +38,8 @@ spec = do
 
   describe "fromXRayHeader" $ do
     it "requires Parent" $ do
-      fromXRayHeader "Root=1-5759e988-bd862e3fe1be46a994272793"
-        `shouldSatisfy` isLeft
+      fromXRayHeader "Root=1-63441c4a-abcdef012345678911111111"
+        `shouldSatisfy` isRight
 
     context "Sampled" $ do
       it "defaults False" $ do
