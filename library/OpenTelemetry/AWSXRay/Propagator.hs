@@ -13,17 +13,18 @@ import OpenTelemetry.Context
 import OpenTelemetry.Propagator
 import OpenTelemetry.Trace.Core (getSpanContext, wrapSpanContext)
 
-awsXRayContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
-awsXRayContextPropagator = awsXRayContextPropagatorOnError $ \_ _ -> pure ()
+awsXRayContextPropagator :: FromHeaderMode -> Propagator Context RequestHeaders ResponseHeaders
+awsXRayContextPropagator mode = awsXRayContextPropagatorOnError mode $ \_ _ -> pure ()
 
 awsXRayContextPropagatorOnError
-  :: (RequestHeaders -> String -> IO ())
+  :: FromHeaderMode
+  -> (RequestHeaders -> String -> IO ())
   -- ^ Called on failure to find or parse an @X-Amzn-Trace-Id@ header
   -> Propagator Context RequestHeaders ResponseHeaders
-awsXRayContextPropagatorOnError onErr = Propagator
+awsXRayContextPropagatorOnError mode onErr = Propagator
   { propagatorNames = ["awsxray trace context"]
   , extractor = \hs c -> do
-    case fromXRayHeader =<< note "not found" (lookup hAmznTraceId hs) of
+    case fromXRayHeader mode =<< note "not found" (lookup hAmznTraceId hs) of
       Left err -> c <$ onErr hs err
       Right TraceInfo {..} -> do
         let wrapped = wrapSpanContext spanContext

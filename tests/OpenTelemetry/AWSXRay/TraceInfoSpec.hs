@@ -23,7 +23,7 @@ spec = do
           <> ";Parent=53995c3f42cd8ad8"
           <> ";Sampled=1"
 
-    fmap toXRayHeader (fromXRayHeader h) `shouldBe` Right h
+    fmap toXRayHeader (fromXRayHeader XRay h) `shouldBe` Right h
 
   it "round trips an example with baggage" $ do
     let
@@ -34,18 +34,22 @@ spec = do
           <> ";baz=bat" -- order matters due to HashMap
           <> ";foo=bar"
 
-    fmap toXRayHeader (fromXRayHeader h) `shouldBe` Right h
+    fmap toXRayHeader (fromXRayHeader XRay h) `shouldBe` Right h
 
   describe "fromXRayHeader" $ do
     it "requires Parent" $ do
-      fromXRayHeader "Root=1-63441c4a-abcdef012345678911111111"
+      fromXRayHeader XRay "Root=1-63441c4a-abcdef012345678911111111"
+        `shouldSatisfy` isLeft
+
+    it "does not require Parent in ALB mode" $ do
+      fromXRayHeader ALB "Root=1-63441c4a-abcdef012345678911111111"
         `shouldSatisfy` isRight
 
     context "Sampled" $ do
       it "defaults False" $ do
         let
           eInfo =
-            fromXRayHeader
+            fromXRayHeader XRay
               $ "Root=1-5759e988-bd862e3fe1be46a994272793"
               <> ";Parent=53995c3f42cd8ad8"
 
@@ -54,7 +58,7 @@ spec = do
       it "interprets =1 as True" $ do
         let
           eInfo =
-            fromXRayHeader
+            fromXRayHeader XRay
               $ "Root=1-5759e988-bd862e3fe1be46a994272793"
               <> ";Parent=53995c3f42cd8ad8"
               <> ";Sampled=1"
@@ -64,7 +68,7 @@ spec = do
       it "interprets other values as as False" $ do
         let
           eInfo =
-            fromXRayHeader
+            fromXRayHeader XRay
               $ "Root=1-5759e988-bd862e3fe1be46a994272793"
               <> ";Parent=53995c3f42cd8ad8"
               <> ";Sampled=flipFlop"
@@ -74,7 +78,7 @@ spec = do
     it "grabs all other values as Baggage" $ do
       let
         eInfo =
-          fromXRayHeader
+          fromXRayHeader XRay
             $ "Root=1-5759e988-bd862e3fe1be46a994272793"
             <> ";Parent=53995c3f42cd8ad8"
             <> ";foo=bar;baz=bat"

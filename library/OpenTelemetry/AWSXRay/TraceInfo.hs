@@ -12,6 +12,7 @@
 --
 module OpenTelemetry.AWSXRay.TraceInfo
   ( TraceInfo(..)
+  , FromHeaderMode(..)
   , fromXRayHeader
   , toXRayHeader
   ) where
@@ -45,8 +46,14 @@ data TraceInfo = TraceInfo
   }
   deriving stock Show
 
-fromXRayHeader :: ByteString -> Either String TraceInfo
-fromXRayHeader bs = do
+data FromHeaderMode =
+    -- | Require Parent span id, assume unsampled if not sampled
+    XRay
+    -- | AWS ALB compatibility mode, Parent span id is generated based on trace id
+    | ALB
+
+fromXRayHeader :: FromHeaderMode -> ByteString -> Either String TraceInfo
+fromXRayHeader mode bs = do
   kv <- bsToKeyValues bs
 
   root <- note "Root not present" $ lookup "Root" kv
@@ -63,8 +70,10 @@ fromXRayHeader bs = do
       prefix errorPrefix $ baseEncodedToTraceId Base16 epochUnique
     _ -> Left "Splitting on - did not produce exactly 3 parts"
 
-  let defaultParent = BS.takeEnd 16 root
-  let parent = fromMaybe defaultParent $ lookup "Parent" kv
+  let parentMissingPolicy = case mode of
+        ALB -> pure . fromMaybe (BS.takeEnd 16 root)
+        XRay -> note "Parent not present"
+  parent <- parentMissingPolicy $ lookup "Parent" kv
   spanId <- prefix "Parent is not a valid SpanId"
     $ baseEncodedToSpanId Base16 parent
 
