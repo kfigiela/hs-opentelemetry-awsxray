@@ -16,6 +16,7 @@ import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Sampler
 import OpenTelemetry.Trace.TraceState as TraceState
 import Data.Word (Word64)
+import qualified Data.HashMap.Strict as H
 
 -- | identical as traceIdRatioBased except it drops first 4 bytes as they indicate timestamp in XRay
 awsXRayTraceIdRatioBased :: Double -> Sampler
@@ -38,6 +39,6 @@ awsXRayTraceIdRatioBased fraction = sampler
             let x = runGet getWord64be (L.fromStrict $ B.take 8 $ B.drop 4 $ traceIdBytes tid)
             if x < traceIdUpperBound
               then do
-                pure (RecordAndSample, [("sampleRate", sampleRate)], maybe TraceState.empty traceState mspanCtxt)
-              else pure (Drop, [], maybe TraceState.empty traceState mspanCtxt)
+                pure (RecordAndSample, H.fromList [("sampleRate", sampleRate)], maybe TraceState.empty traceState mspanCtxt)
+              else pure (Drop, mempty, maybe TraceState.empty traceState mspanCtxt)
         }
