@@ -12,14 +12,14 @@
 --
 module OpenTelemetry.AWSXRay.TraceInfo
   ( TraceInfo(..)
-  , FromHeaderMode(..)
   , fromXRayHeader
   , toXRayHeader
+  , traceIdFromXRayHeader
   ) where
 
 import Prelude
 
-import Control.Error.Util (note)
+import Control.Error.Util (note, hush)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -34,10 +34,10 @@ import OpenTelemetry.Trace.Id
   , baseEncodedToSpanId
   , baseEncodedToTraceId
   , spanIdBaseEncodedByteString
-  , traceIdBaseEncodedByteString
+  , traceIdBaseEncodedByteString, TraceId
   )
 import qualified OpenTelemetry.Trace.TraceState as TS
-import Data.Maybe (fromMaybe)
+import Control.Monad ((>=>))
 
 -- | The data to read/write from the @X-Amzn-TraceId@ header
 data TraceInfo = TraceInfo
@@ -46,34 +46,24 @@ data TraceInfo = TraceInfo
   }
   deriving stock Show
 
-data FromHeaderMode =
-    -- | Require Parent span id, assume unsampled if not sampled
-    XRay
-    -- | AWS ALB compatibility mode, Parent span id is generated based on trace id
-    | ALB
+traceIdFromXRayHeader :: ByteString -> Maybe TraceId
+traceIdFromXRayHeader = hush . bsToKeyValues >=> rootTraceId
 
-fromXRayHeader :: FromHeaderMode -> ByteString -> Either String TraceInfo
-fromXRayHeader mode bs = do
+rootTraceId :: [(ByteString, ByteString)] -> Maybe TraceId
+rootTraceId kv = do
+  root <- lookup "Root" kv
+  ["1", epoch, unique] <- pure $ bsSplitOn '-' root
+  let
+    -- AWS may trim leading zeros from epoch; we must put them back for it
+    -- to be valid for OTel
+    epochUnique = bsLeftPad 8 '0' epoch <> unique
+  hush $ baseEncodedToTraceId Base16 epochUnique
+
+fromXRayHeader :: ByteString -> Either String TraceInfo
+fromXRayHeader bs = do
   kv <- bsToKeyValues bs
-
-  root <- note "Root not present" $ lookup "Root" kv
-  traceId <- case bsSplitOn '-' root of
-    ["1", epoch, unique] -> do
-      let
-        -- AWS may trim leading zeros from epoch; we must put them back for it
-        -- to be valid for OTel
-        epochUnique = bsLeftPad 8 '0' epoch <> unique
-        errorPrefix =
-          "Root epoch+unique ("
-            <> show epochUnique
-            <> ") is not a valid TraceId"
-      prefix errorPrefix $ baseEncodedToTraceId Base16 epochUnique
-    _ -> Left "Splitting on - did not produce exactly 3 parts"
-
-  let parentMissingPolicy = case mode of
-        ALB -> pure . fromMaybe (BS.takeEnd 16 root)
-        XRay -> note "Parent not present"
-  parent <- parentMissingPolicy $ lookup "Parent" kv
+  traceId <- note "Root invalid or not present" $ rootTraceId kv
+  parent <- note "Parent not present" $ lookup "Parent" kv
   spanId <- prefix "Parent is not a valid SpanId"
     $ baseEncodedToSpanId Base16 parent
 
