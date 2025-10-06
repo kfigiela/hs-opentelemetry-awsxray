@@ -6,7 +6,6 @@ module OpenTelemetry.Trace.Setup.Lens
   , attributeLimitsL
   , spanLimitsL
   , propagatorL
-  , loggerL
   ) where
 
 import Prelude
