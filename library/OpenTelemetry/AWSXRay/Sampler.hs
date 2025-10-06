@@ -8,7 +8,7 @@ import Prelude
 import Data.Binary.Get
 import qualified Data.ByteString  as B
 import qualified Data.ByteString.Lazy  as L
-import Data.Text
+import Data.Text hiding (show)
 import OpenTelemetry.Attributes (ToAttribute (toAttribute))
 import OpenTelemetry.Context
 import OpenTelemetry.Trace.Core (getSpanContext, traceState)
