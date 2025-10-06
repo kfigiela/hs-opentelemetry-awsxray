@@ -10,7 +10,6 @@ module OpenTelemetry.Trace.Setup.Lens
 
 import Prelude
 
-import Data.Text (Text)
 import Lens.Micro (Lens', lens)
 import Network.HTTP.Types.Header (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes (AttributeLimits)
