@@ -16,7 +16,6 @@ import Lens.Micro (Lens', lens)
 import Network.HTTP.Types.Header (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Context (Context)
-import OpenTelemetry.Logs.Core (Log)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace (TracerProviderOptions(..))
@@ -50,7 +49,3 @@ propagatorL
        (Propagator Context RequestHeaders ResponseHeaders)
 propagatorL = lens tracerProviderOptionsPropagators
   $ \x y -> x { tracerProviderOptionsPropagators = y }
-
-loggerL :: Lens' TracerProviderOptions (Log Text -> IO ())
-loggerL = lens tracerProviderOptionsLogger
-  $ \x y -> x { tracerProviderOptionsLogger = y }
