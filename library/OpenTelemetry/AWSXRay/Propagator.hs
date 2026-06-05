@@ -9,11 +9,13 @@ import Prelude
 import Control.Error.Util (note)
 import Network.HTTP.Types.Header (HeaderName, RequestHeaders, ResponseHeaders)
 import OpenTelemetry.AWSXRay.TraceInfo
-import OpenTelemetry.Context
-  (Context, insertBaggage, insertSpan, lookupBaggage, lookupSpan)
+import OpenTelemetry.Context (Context, insertBaggage, insertSpan, lookupBaggage, lookupSpan)
 import OpenTelemetry.Propagator
 import OpenTelemetry.Trace.Core (getSpanContext, wrapSpanContext)
 import OpenTelemetry.Context (insertExternalTraceId)
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+
 
 data FromHeaderMode =
     -- | Require Parent span id, assume unsampled if not sampled
@@ -21,23 +23,23 @@ data FromHeaderMode =
     -- | AWS ALB compatibility mode, only sets trace id without referring to parent span
     | ALB
 
-awsXRayContextPropagator :: FromHeaderMode -> Propagator Context RequestHeaders ResponseHeaders
+awsXRayContextPropagator :: FromHeaderMode -> TextMapPropagator
 awsXRayContextPropagator mode = awsXRayContextPropagatorOnError mode $ \_ _ -> pure ()
 
 awsXRayContextPropagatorOnError
   :: FromHeaderMode
-  -> (RequestHeaders -> String -> IO ())
+  -> (TextMap -> String -> IO ())
   -- ^ Called on failure to find or parse an @X-Amzn-Trace-Id@ header
-  -> Propagator Context RequestHeaders ResponseHeaders
+  -> TextMapPropagator
 awsXRayContextPropagatorOnError mode onErr = Propagator
-  { propagatorNames = ["awsxray trace context"]
+  { propagatorFields = [hAmznTraceId]
   , extractor = \hs c ->
     case mode of
       ALB -> do
-        let tid = lookup hAmznTraceId hs >>= traceIdFromXRayHeader
+        let tid = textMapLookup hAmznTraceId hs >>= traceIdFromXRayHeader . encodeUtf8
         pure $ maybe id insertExternalTraceId tid $ c
       XRay -> do
-        case fromXRayHeader  =<< note "not found" (lookup hAmznTraceId hs) of
+        case fromXRayHeader . encodeUtf8 =<< note "not found" (textMapLookup hAmznTraceId hs) of
           Left err -> c <$ onErr hs err
           Right TraceInfo {..} -> do
             let wrapped = wrapSpanContext spanContext
@@ -46,8 +48,8 @@ awsXRayContextPropagatorOnError mode onErr = Propagator
     Nothing -> pure hs
     Just sp -> do
       info <- TraceInfo <$> getSpanContext sp <*> pure (lookupBaggage c)
-      pure $ (hAmznTraceId, toXRayHeader info) : hs
+      pure $ textMapInsert hAmznTraceId (decodeUtf8 $ toXRayHeader info) hs
   }
 
-hAmznTraceId :: HeaderName
-hAmznTraceId = "X-Amzn-Trace-Id"
+hAmznTraceId :: Text
+hAmznTraceId = "x-amzn-trace-id"

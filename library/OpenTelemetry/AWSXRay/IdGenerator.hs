@@ -12,21 +12,22 @@ import Data.Binary.Builder (putWord32be, toLazyByteString)
 import Data.ByteString.Lazy (toStrict)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GHC.IO (unsafePerformIO)
-import OpenTelemetry.Trace.Id.Generator ( IdGenerator(..) )
-import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
+import OpenTelemetry.Trace.Id.Generator ( IdGenerator, customIdGenerator )
 import System.Random.MWC (createSystemRandom)
 import System.Random.Stateful (uniformByteStringM)
 import Data.Word (Word32)
+import Data.ByteString.Short (toShort)
+
 
 awsXRayIdGenerator :: IdGenerator
 {-# NOINLINE awsXRayIdGenerator #-}
 awsXRayIdGenerator = unsafePerformIO $ do
   g <- createSystemRandom
-  pure
-    IdGenerator
-      { generateSpanIdBytes = generateSpanIdBytes defaultIdGenerator
-      , generateTraceIdBytes = do
+  pure $
+    customIdGenerator
+      (toShort <$> uniformByteStringM 8 g)
+      (do
           epoch <- round @_ @Word32 <$> getPOSIXTime
           unique <- uniformByteStringM 12 g
-          pure $ toStrict (toLazyByteString $ putWord32be epoch) <> unique
-      }
+          pure $ toShort $ toStrict (toLazyByteString $ putWord32be epoch) <> unique
+      )

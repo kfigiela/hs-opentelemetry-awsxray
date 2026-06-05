@@ -32,13 +32,13 @@ awsXRayTraceIdRatioBased fraction = sampler
     traceIdUpperBound = floor (min maxWord (fraction * maxWord)) :: Word64
     maxWord = fromIntegral $ maxBound @Word64
     sampler =
-      Sampler
-        { getDescription = "TraceIdRatioBasedXRay{" <> pack (show fraction) <> "}"
-        , shouldSample = \ctxt tid _ _ -> do
+      CustomSampler
+        ("TraceIdRatioBasedXRay{" <> pack (show fraction) <> "}")
+        (\ctxt tid _ _ _ -> do
             mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
             let x = runGet getWord64be (L.fromStrict $ B.take 8 $ B.drop 4 $ traceIdBytes tid)
             if x < traceIdUpperBound
               then do
-                pure (RecordAndSample, H.fromList [("sampleRate", sampleRate)], maybe TraceState.empty traceState mspanCtxt)
-              else pure (Drop, mempty, maybe TraceState.empty traceState mspanCtxt)
-        }
+                pure $ SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRate) (maybe TraceState.empty traceState mspanCtxt)
+              else pure $ SamplingDecision Drop mempty (maybe TraceState.empty traceState mspanCtxt)
+        )

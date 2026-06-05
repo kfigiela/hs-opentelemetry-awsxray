@@ -23,7 +23,7 @@ withTracerProvider
   -> (TracerProvider -> m a)
   -> m a
 withTracerProvider setup =
-  bracket (initializeGlobalTracerProvider setup) shutdownTracerProvider
+  bracket (initializeGlobalTracerProvider setup) (flip Trace.shutdownTracerProvider Nothing)
 
 initializeGlobalTracerProvider
   :: MonadIO m
@@ -40,6 +40,3 @@ initializeTracerProvider
 initializeTracerProvider setup = liftIO $ do
   (processors, opts) <- getTracerProviderInitializationOptions
   createTracerProvider processors $ setup opts
-
-shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
-shutdownTracerProvider = liftIO . Trace.shutdownTracerProvider

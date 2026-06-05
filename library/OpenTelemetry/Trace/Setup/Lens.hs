@@ -14,7 +14,7 @@ import Lens.Micro (Lens', lens)
 import Network.HTTP.Types.Header (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Context (Context)
-import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator (Propagator, TextMapPropagator)
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace (TracerProviderOptions(..))
 import OpenTelemetry.Trace.Core (SpanLimits)
@@ -44,6 +44,6 @@ spanLimitsL = lens tracerProviderOptionsSpanLimits
 propagatorL
   :: Lens'
        TracerProviderOptions
-       (Propagator Context RequestHeaders ResponseHeaders)
+       TextMapPropagator
 propagatorL = lens tracerProviderOptionsPropagators
   $ \x y -> x { tracerProviderOptionsPropagators = y }
